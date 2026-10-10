@@ -3,16 +3,21 @@ from bs4 import BeautifulSoup
 import requests as re
 
 
+ticker = ["Nifty 50", "Sensex", "BSE", "NSE", "Stock Market", "Share Market", "Equity Market","Derivatives", "Nifty 50 Futures", "Nifty 50 Options","Sensex Futures", "Sensex Options"]
 
 MODEL_DIR = r"E:\WebScraping\models\financial-summarization-pegasus"
 
 tokenizer = PegasusTokenizer.from_pretrained(MODEL_DIR, local_files_only=True)
 model = PegasusForConditionalGeneration.from_pretrained(MODEL_DIR, local_files_only=True)
 
-url = "https://www.moneycontrol.com/news/business/markets/sensex-up-550-pts-nifty-above-22-400-buying-in-it-shares-among-key-factors-behind-market-rise-14048237.html"
-r = re.get(url)
-soup = BeautifulSoup(r.content, 'html.parser')
-paragraphs = soup.find_all('p')
+
+def search_for_stock_news_urls(ticker):
+    search_url = "https://www.google.com/search?q=moneycontrol+{}&tbm=nws".format(ticker)
+    r = re.get(search_url)
+    soup = BeautifulSoup(r.content, 'html.parser')
+    atags = soup.find_all('a')
+    hrefs = [links['href'] for links in atags ]
+    return hrefs
 
 text = [paragraph.text for paragraph in paragraphs]
 words = ' '.join(text).split(' ')[:400]
