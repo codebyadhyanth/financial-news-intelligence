@@ -1,6 +1,7 @@
 
 import csv
 import os
+os.environ["TF_ENABLE_ONEDNN_OPTS"] = "0"
 import time
 import requests
 import feedparser
@@ -257,15 +258,57 @@ def summarize_chunk(text, tokenizer, model):
     ).strip()
 
 
+# def summarize_article(article, tokenizer, model):
+#     """
+#     Summarize the whole available article in chunks.
+#     Each chunk's summary is combined into one summary string.
+#     """
+
+#     token_ids = tokenizer.encode(
+#         article,
+#         add_special_tokens=False,
+#     )
+
+#     if not token_ids:
+#         return ""
+
+#     chunk_summaries = []
+
+#     for start in range(0, len(token_ids), CHUNK_TOKENS):
+#         chunk_ids = token_ids[start:start + CHUNK_TOKENS]
+
+#         chunk_text = tokenizer.decode(
+#             chunk_ids,
+#             skip_special_tokens=True,
+#         ).strip()
+
+#         if not chunk_text:
+#             continue
+
+#         summary = summarize_chunk(
+#             chunk_text,
+#             tokenizer,
+#             model,
+#         )
+
+#         if summary:
+#             chunk_summaries.append(summary)
+
+#     # Store a single continuous summary in the CSV cell.
+#     return " ".join(chunk_summaries)
+
+
 def summarize_article(article, tokenizer, model):
     """
-    Summarize the whole available article in chunks.
-    Each chunk's summary is combined into one summary string.
+    Split a long article into safe token chunks,
+    summarize each chunk, and combine the summaries.
     """
 
+    # Tokenize the article without displaying the long-sequence warning.
     token_ids = tokenizer.encode(
         article,
         add_special_tokens=False,
+        verbose=False,
     )
 
     if not token_ids:
@@ -273,8 +316,11 @@ def summarize_article(article, tokenizer, model):
 
     chunk_summaries = []
 
-    for start in range(0, len(token_ids), CHUNK_TOKENS):
-        chunk_ids = token_ids[start:start + CHUNK_TOKENS]
+    # Keep chunks safely below Pegasus's 512-token input limit.
+    chunk_size = 450
+
+    for start in range(0, len(token_ids), chunk_size):
+        chunk_ids = token_ids[start:start + chunk_size]
 
         chunk_text = tokenizer.decode(
             chunk_ids,
@@ -293,7 +339,6 @@ def summarize_article(article, tokenizer, model):
         if summary:
             chunk_summaries.append(summary)
 
-    # Store a single continuous summary in the CSV cell.
     return " ".join(chunk_summaries)
 
 
